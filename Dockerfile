@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim
 
-ARG CMAKE_VERSION=3.31.5
-ARG NINJA_VERSION=1.12.1
+ARG CMAKE_VERSION=4.3.2
+ARG NINJA_VERSION=1.13.1
 
 RUN apt-get update \
     && apt-get install -y curl g++ make libssl-dev re2c \

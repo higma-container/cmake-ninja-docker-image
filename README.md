@@ -8,11 +8,11 @@ cmakeとninjaをソースからコンパイルしてインストールする
 # Build
 
 ```sh
-docker build --platform linux/amd64,linux/arm64 -t yoshiyasu1111/cmake-ninja:v0.5 .
+docker build -t ghcr.io/higma-container/cmake-ninja:v0.6 .
 ```
 
-# Start Container
+# Push
 
 ```sh
-docker run -it yoshiyasu1111/cmake-ninja:v0.5 /bin/bash  
+docker push ghcr.io/higma-container/cmake-ninja:v0.6
 ```
