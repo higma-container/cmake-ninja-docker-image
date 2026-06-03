@@ -1,7 +1,7 @@
 # Tools version
 
-- CMake 3.31.5
-- ninja 1.12.1
+- CMake 4.3.3
+- ninja 1.13.2
 
 # Build
 

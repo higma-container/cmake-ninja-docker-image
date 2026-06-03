@@ -1,26 +1,51 @@
-FROM debian:bookworm-slim
+# ==========================================
+# 1. ビルド用ステージ (Builder)
+# ==========================================
+FROM debian:trixie-slim AS builder
 
-ARG CMAKE_VERSION=4.3.2
+ARG CMAKE_VERSION=4.3.3
 ARG NINJA_VERSION=1.13.1
 
-RUN apt-get update \
-    && apt-get install -y curl g++ make libssl-dev re2c \
-    && curl -OL https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.tar.gz \
+# ビルドに必要な依存関係をインストール
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates g++ make libssl-dev re2c \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- ① CMake のビルド ---
+# 成果物を /usr/local/cmake-dist に集約します
+RUN curl -OL https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.tar.gz \
     && tar xf cmake-${CMAKE_VERSION}.tar.gz \
     && cd cmake-${CMAKE_VERSION} \
-    && ./bootstrap \
-    && make -j`nproc` \
+    && ./bootstrap --prefix=/usr/local/cmake-dist \
+    && make -j$(nproc) \
     && make install \
     && cd .. \
-    && rm -fr cmake-${CMAKE_VERSION}* \
-    && curl -OL https://github.com/ninja-build/ninja/archive/refs/tags/v${NINJA_VERSION}.tar.gz \
+    && rm -rf cmake-${CMAKE_VERSION}*
+
+# 後の Ninja のビルドで今作った CMake を使えるように一時的にパスを通す
+ENV PATH="/usr/local/cmake-dist/bin:$PATH"
+
+# --- ② Ninja のビルド ---
+# 成果物を /usr/local/ninja-dist に集約します
+RUN curl -OL https://github.com/ninja-build/ninja/archive/refs/tags/v${NINJA_VERSION}.tar.gz \
     && tar xf v${NINJA_VERSION}.tar.gz \
-    && cd ninja-${NINJA_VERSION}/ \
-    && cmake -B build-cmake \
-    && cmake --build build-cmake \
+    && cd ninja-${NINJA_VERSION} \
+    && cmake -B build-cmake -DCMAKE_INSTALL_PREFIX=/usr/local/ninja-dist \
+    && cmake --build build-cmake -j$(nproc) \
     && cmake --install ./build-cmake \
     && cd .. \
-    && rm -fr ninja-${NINJA_VERSION}/ v${NINJA_VERSION}.tar.gz \
-    && apt-get purge -y curl g++ make libssl-dev re2c \
-    && apt-get autoremove -y \
-    && rm -fr /var/lib/apt/lists/*
+    && rm -rf ninja-${NINJA_VERSION} v${NINJA_VERSION}.tar.gz
+
+
+# ==========================================
+# 2. 実行用ステージ (Runner)
+# ==========================================
+FROM debian:trixie-slim
+
+# CMakeの実行に必要な最小限のランタイムライブラリ（libssl等）をインストール
+# ※ NinjaはC++の標準ライブラリ（libstdc++6）だけで動くため、特別なパッケージは不要です
+RUN apt-get update && apt-get install -y --no-install-recommends libssl3 ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# builderステージから、CMake と Ninja のビルド済み成果物だけをコピー
+COPY --from=builder /usr/local/cmake-dist/ /usr/local/
+COPY --from=builder /usr/local/ninja-dist/ /usr/local/
