@@ -4,84 +4,96 @@ on:
   push:
     branches:
       - main
+
   pull_request:
 
 env:
-  IMAGE_NAME: higma-container/cmake-ninja
+  IMAGE_NAME: cmake-ninja
 
 jobs:
   # ==========================================
-  # Build amd64
+  # Build & Test amd64
   # ==========================================
   build-amd64:
     runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
+      # ----------------------------------------
+      # Build
+      # ----------------------------------------
       - name: Build amd64 image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64
           load: true
           tags: |
             ${{ env.IMAGE_NAME }}:test-amd64
-          cache-from: type=gha,scope=test-amd64
-          cache-to: type=gha,mode=max,scope=test-amd64
 
-      - name: Build summary
-        run: echo "amd64 build succeeded"
+          # Releaseと共有するキャッシュ
+          cache-from: type=gha,scope=cmake-ninja-amd64
+          cache-to: type=gha,mode=max,scope=cmake-ninja-amd64
 
+      # ----------------------------------------
+      # Test
+      # ----------------------------------------
       - name: Check CMake
         run: |
           docker run --rm \
             ${{ env.IMAGE_NAME }}:test-amd64 \
             cmake --version
-      
+
       - name: Check Ninja
         run: |
           docker run --rm \
             ${{ env.IMAGE_NAME }}:test-amd64 \
             ninja --version
-          
+
       - name: Check executable paths
         run: |
           docker run --rm \
             ${{ env.IMAGE_NAME }}:test-amd64 \
             sh -c 'which cmake && which ninja'
 
+
   # ==========================================
-  # Build arm64
+  # Build & Test arm64
   # ==========================================
   build-arm64:
     runs-on: ubuntu-24.04-arm
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
+      # ----------------------------------------
+      # Build
+      # ----------------------------------------
       - name: Build arm64 image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/arm64
           load: true
           tags: |
             ${{ env.IMAGE_NAME }}:test-arm64
-          cache-from: type=gha,scope=test-arm64
-          cache-to: type=gha,mode=max,scope=test-arm64
 
-      - name: Build summary
-        run: echo "arm64 build succeeded"
+          # Releaseと共有するキャッシュ
+          cache-from: type=gha,scope=cmake-ninja-arm64
+          cache-to: type=gha,mode=max,scope=cmake-ninja-arm64
 
+      # ----------------------------------------
+      # Test
+      # ----------------------------------------
       - name: Check CMake
         run: |
           docker run --rm \

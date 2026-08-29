@@ -9,6 +9,10 @@ CMakeとninjaがインストールされた環境のdockerイメージ
 - CMake 4.4.3
 - ninja 1.13.2
 
+## CI
+
+mainにpushするとイメージのビルドを行います。リリースを発行するとイメージをレジストリにプッシュします。
+
 ## 手動Build
 
 ```sh
@@ -26,5 +30,3 @@ docker push ghcr.io/higma-container/cmake-ninja:v0.7
 ```sh
 docker build --platform linux/amd64,linux/arm64 -t ghcr.io/higma-container/cmake-ninja:v0.7 --push .
 ```
-
-## CI
