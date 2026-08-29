@@ -27,13 +27,4 @@ docker push ghcr.io/higma-container/cmake-ninja:v0.7
 docker build --platform linux/amd64,linux/arm64 -t ghcr.io/higma-container/cmake-ninja:v0.7 --push .
 ```
 
-## Ciを使ったビルド
-
-```sh
-git add .
-git commit -m "Update Docker image"
-git push
-
-git tag v0.7
-git push origin v0.7
-```
+## CI
