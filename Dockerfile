@@ -1,7 +1,7 @@
 # ==========================================
 # 1. CMake builder
 # ==========================================
-FROM debian:trixie-slim AS builder
+FROM debian:trixie-slim AS cmake-builder
 
 ARG CMAKE_VERSION=4.4.3
 
@@ -53,5 +53,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends libssl3 ca-cert
     && rm -rf /var/lib/apt/lists/*
 
 # builderステージから、CMake と Ninja のビルド済み成果物だけをコピー
-COPY --from=builder /usr/local/cmake-dist/ /usr/local/
-COPY --from=builder /usr/local/ninja-dist/ /usr/local/
+COPY --from=cmake-builder /usr/local/cmake-dist/ /usr/local/
+COPY --from=ninja-builder /usr/local/ninja-dist/ /usr/local/
