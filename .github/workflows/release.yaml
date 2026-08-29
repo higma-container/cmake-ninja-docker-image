@@ -1,9 +1,8 @@
-name: Build and Push Docker Image to GHCR
+name: Release Docker Image
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
 
 env:
   REGISTRY: ghcr.io
@@ -11,7 +10,7 @@ env:
 
 jobs:
   # ==========================================
-  # amd64
+  # Build amd64
   # ==========================================
   build-amd64:
     runs-on: ubuntu-24.04
@@ -23,6 +22,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -44,10 +45,12 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-amd64
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-
+            org.opencontainers.image.version=${{ github.ref_name }}
+          cache-from: type=gha,scope=amd64
+          cache-to: type=gha,mode=max,scope=amd64
 
   # ==========================================
-  # arm64
+  # Build arm64
   # ==========================================
   build-arm64:
     runs-on: ubuntu-24.04-arm
@@ -59,6 +62,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -80,12 +85,14 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-arm64
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-
+            org.opencontainers.image.version=${{ github.ref_name }}
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,mode=max,scope=arm64
 
   # ==========================================
   # Create multi-platform manifest
   # ==========================================
-  manifest:
+  publish:
     runs-on: ubuntu-24.04
 
     needs:
@@ -107,11 +114,17 @@ jobs:
       - name: Create multi-platform manifest
         run: |
           docker buildx imagetools create \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-amd64 \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-arm64
 
-      - name: Inspect manifest
+      - name: Update latest
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+
+      - name: Inspect image
         run: |
           docker buildx imagetools inspect \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}

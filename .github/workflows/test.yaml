@@ -1,0 +1,101 @@
+name: Test Docker Image
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+env:
+  IMAGE_NAME: higma-container/cmake-ninja
+
+jobs:
+  # ==========================================
+  # Build amd64
+  # ==========================================
+  build-amd64:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build amd64 image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:test-amd64
+          cache-from: type=gha,scope=test-amd64
+          cache-to: type=gha,mode=max,scope=test-amd64
+
+      - name: Build summary
+        run: echo "amd64 build succeeded"
+
+      - name: Check CMake
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-amd64 \
+            cmake --version
+      
+      - name: Check Ninja
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-amd64 \
+            ninja --version
+          
+      - name: Check executable paths
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-amd64 \
+            sh -c 'which cmake && which ninja'
+
+  # ==========================================
+  # Build arm64
+  # ==========================================
+  build-arm64:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build arm64 image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          load: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:test-arm64
+          cache-from: type=gha,scope=test-arm64
+          cache-to: type=gha,mode=max,scope=test-arm64
+
+      - name: Build summary
+        run: echo "arm64 build succeeded"
+
+      - name: Check CMake
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-arm64 \
+            cmake --version
+
+      - name: Check Ninja
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-arm64 \
+            ninja --version
+
+      - name: Check executable paths
+        run: |
+          docker run --rm \
+            ${{ env.IMAGE_NAME }}:test-arm64 \
+            sh -c 'which cmake && which ninja'
